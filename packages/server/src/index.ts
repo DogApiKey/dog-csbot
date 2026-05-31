@@ -155,6 +155,7 @@ async function main() {
   const server = Bun.serve({
     port: config.port,
     fetch: app.fetch,
+    idleTimeout: 120, // 2 minutes for LLM calls
   });
 
   console.log(`[csbot] Server running on http://localhost:${server.port}`);
