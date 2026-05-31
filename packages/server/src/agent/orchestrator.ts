@@ -58,6 +58,16 @@ export class Orchestrator {
   }
 
   /**
+   * Strip tool call syntax from LLM response.
+   */
+  private stripToolCalls(text: string): string {
+    let cleaned = text.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, "").trim();
+    cleaned = cleaned.replace(/<function=[\s\S]*?<\/function>/g, "").trim();
+    cleaned = cleaned.replace(/<parameter=[\s\S]*?<\/parameter>/g, "").trim();
+    return cleaned;
+  }
+
+  /**
    * Process a user message with RAG support.
    */
   async processMessage(conversationId: string, userMessage: string): Promise<void> {
@@ -120,6 +130,9 @@ export class Orchestrator {
           fullResponse = textContent.text;
         }
       }
+
+      // Strip any tool call syntax that the LLM might have output
+      fullResponse = this.stripToolCalls(fullResponse);
 
       console.log(`[orchestrator] Response length: ${fullResponse.length}`);
 
