@@ -14,6 +14,10 @@ import { createHealthRoutes } from "./api/health.ts";
 import { createChatRoutes } from "./api/chat.ts";
 import { createAdminRoutes } from "./api/admin.ts";
 
+// Vector store imports (loaded conditionally)
+import { VectorStore as QdrantStore } from "./rag/vector-store.ts";
+import { VikingStore } from "./rag/viking-store.ts";
+
 async function main() {
   const config = loadConfig();
 
@@ -28,6 +32,28 @@ async function main() {
 
   const messageBus = new MessageBus(config.redis.url);
   console.log("[csbot] Redis connected");
+
+  // ─── Vector Store ───────────────────────────────────────────────────────
+
+  let vectorStore: QdrantStore | VikingStore | null = null;
+
+  if (config.vectorStore.type === "viking") {
+    const { ak, sk, region, collection, indexName, vectorSize } = config.vectorStore.viking;
+    if (ak && sk) {
+      vectorStore = new VikingStore({ ak, sk, region, collection, indexName, vectorSize });
+      await vectorStore.ensureCollection();
+      console.log("[csbot] Viking DB connected");
+    } else {
+      console.log("[csbot] Viking DB not configured (missing VIKING_AK/VIKING_SK), using keyword search only");
+    }
+  } else if (config.vectorStore.type === "qdrant") {
+    const { url, collectionName, vectorSize } = config.vectorStore.qdrant;
+    vectorStore = new QdrantStore(url, collectionName, vectorSize);
+    await vectorStore.ensureCollection();
+    console.log("[csbot] Qdrant connected");
+  } else {
+    console.log("[csbot] No vector store configured, using keyword search only");
+  }
 
   // ─── Services ───────────────────────────────────────────────────────────
 

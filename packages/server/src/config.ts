@@ -6,10 +6,22 @@ export interface Config {
   redis: {
     url: string;
   };
-  qdrant: {
-    url: string;
-    collectionName: string;
-    vectorSize: number;
+  vectorStore: {
+    /** "qdrant" | "viking" */
+    type: string;
+    qdrant: {
+      url: string;
+      collectionName: string;
+      vectorSize: number;
+    };
+    viking: {
+      ak: string;
+      sk: string;
+      region: string;
+      collection: string;
+      indexName: string;
+      vectorSize: number;
+    };
   };
   llm: {
     provider: string;
@@ -44,10 +56,21 @@ export function loadConfig(): Config {
     redis: {
       url: env("REDIS_URL", "redis://localhost:6379"),
     },
-    qdrant: {
-      url: env("QDRANT_URL", "http://localhost:6333"),
-      collectionName: env("QDRANT_COLLECTION", "csbot_docs"),
-      vectorSize: parseInt(env("EMBEDDING_VECTOR_SIZE", "1536"), 10),
+    vectorStore: {
+      type: env("VECTOR_STORE_TYPE", "qdrant"),
+      qdrant: {
+        url: env("QDRANT_URL", "http://localhost:6333"),
+        collectionName: env("QDRANT_COLLECTION", "csbot_docs"),
+        vectorSize: parseInt(env("EMBEDDING_VECTOR_SIZE", "1536"), 10),
+      },
+      viking: {
+        ak: env("VIKING_AK", ""),
+        sk: env("VIKING_SK", ""),
+        region: env("VIKING_REGION", "cn-beijing"),
+        collection: env("VIKING_COLLECTION", "csbot_docs"),
+        indexName: env("VIKING_INDEX", "csbot_docs_idx"),
+        vectorSize: parseInt(env("EMBEDDING_VECTOR_SIZE", "1536"), 10),
+      },
     },
     llm: {
       provider: env("LLM_PROVIDER", "openai"),
