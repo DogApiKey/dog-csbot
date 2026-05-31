@@ -113,6 +113,7 @@ csbot/
 - `POST /api/admin/documents` — Upload document
 - `DELETE /api/admin/documents/:id` — Delete document
 - `POST /api/admin/documents/:id/reindex` — Re-index document
+- `POST /api/admin/sync/github` — Sync from GitHub repo
 - `GET /api/admin/conversations` — List conversations
 - `GET /api/admin/conversations/:id/messages` — Conversation messages
 
@@ -131,6 +132,42 @@ Add the chat widget to any website:
   title="Support Chat"
   greeting="Hi! How can I help you?"
 ></csbot-widget>
+```
+
+## Deployment
+
+### Railway (Recommended)
+
+```bash
+# Install Railway CLI
+npm i -g @railway/cli
+
+# Login and deploy
+./scripts/deploy-railway.sh
+```
+
+See [deploy/railway/RAILWAY.md](deploy/railway/RAILWAY.md) for detailed instructions.
+
+### Docker Compose (Self-hosted)
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d
+```
+
+## Knowledge Base Sync
+
+CSBot can sync documents from a GitHub repository:
+
+1. Create a knowledge base repo (e.g., `dogapi-kb`)
+2. Add Markdown documents to the repo
+3. In Admin Dashboard, click "📦 Sync from GitHub"
+4. Enter repo details and sync
+
+```bash
+# Or use the API directly
+curl -X POST http://localhost:3000/api/admin/sync/github \
+  -H "Content-Type: application/json" \
+  -d '{"owner": "DogApiKey", "repo": "dogapi-kb"}'
 ```
 
 ## Configuration

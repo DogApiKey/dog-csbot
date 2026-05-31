@@ -1,0 +1,10 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "packages/server/Dockerfile"
+
+[deploy]
+startCommand = "bun run packages/server/dist/index.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
