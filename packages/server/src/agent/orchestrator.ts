@@ -68,7 +68,7 @@ export class Orchestrator {
     console.log(`[orchestrator] Searching knowledge base for: ${userMessage}`);
     const searchResult = await this.retriever.retrieve(userMessage);
     const ragContext = this.retriever.formatContext(searchResult);
-    console.log(`[orchestrator] Found ${searchResult.chunks.length} relevant chunks`);
+    console.log(`[orchestrator] Found ${searchResult.chunks.length} relevant chunks (via ${searchResult.source} search)`);
 
     // Step 2: Build messages with RAG context
     const history = await this.conversationService.getRecentMessages(conversationId, 20);

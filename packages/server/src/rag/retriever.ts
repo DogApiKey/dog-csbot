@@ -2,33 +2,137 @@ import type { Database } from "../db/index.ts";
 import { documentChunks } from "../db/schema.ts";
 import { sql } from "drizzle-orm";
 
+export interface SearchChunk {
+  content: string;
+  score: number;
+  documentId: string;
+  chunkIndex: number;
+}
+
 export interface RetrievalResult {
-  chunks: Array<{ content: string; score: number; documentId: string; chunkIndex: number }>;
+  chunks: SearchChunk[];
   query: string;
+  source: "vector" | "keyword";
 }
 
 /**
- * RAG retriever using PostgreSQL full-text search.
- * Falls back to keyword matching when no embedding API is available.
+ * Client for calling the vector-proxy search API.
+ * Sends text queries to the proxy which handles embedding + vector search.
+ */
+export class VectorSearchClient {
+  private apiUrl: string;
+  private headers: Record<string, string>;
+
+  constructor(apiUrl: string, apiKey?: string) {
+    this.apiUrl = apiUrl.replace(/\/$/, "");
+    this.headers = {
+      "Content-Type": "application/json",
+    };
+    if (apiKey) {
+      this.headers["Authorization"] = `Bearer ${apiKey}`;
+    }
+  }
+
+  /**
+   * Search the vector store by text. The proxy handles embedding the query.
+   */
+  async search(
+    text: string,
+    topK: number = 5,
+    timeoutMs: number = 5000,
+  ): Promise<SearchChunk[]> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(`${this.apiUrl}/search`, {
+        method: "POST",
+        headers: this.headers,
+        body: JSON.stringify({ text, topK }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Vector search failed (${response.status}): ${error}`);
+      }
+
+      const data = (await response.json()) as {
+        matches: Array<{
+          id: string;
+          score: number;
+          metadata?: Record<string, unknown>;
+        }>;
+      };
+
+      return (data.matches || []).map((m) => ({
+        content: (m.metadata?.content as string) || "",
+        score: m.score,
+        documentId: (m.metadata?.documentId as string) || "",
+        chunkIndex: (m.metadata?.chunkIndex as number) || 0,
+      }));
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+}
+
+export interface RetrieverOptions {
+  topK?: number;
+  vectorClient?: VectorSearchClient;
+  vectorTimeoutMs?: number;
+}
+
+/**
+ * RAG retriever with vector search (primary) and PostgreSQL keyword fallback.
  */
 export class Retriever {
   private db: Database;
   private topK: number;
+  private vectorClient?: VectorSearchClient;
+  private vectorTimeoutMs: number;
 
-  constructor(db: Database, topK: number = 5) {
+  constructor(db: Database, options: RetrieverOptions = {}) {
     this.db = db;
-    this.topK = topK;
+    this.topK = options.topK ?? 5;
+    this.vectorClient = options.vectorClient;
+    this.vectorTimeoutMs = options.vectorTimeoutMs ?? 5000;
   }
 
   /**
-   * Retrieve relevant chunks using PostgreSQL full-text search.
+   * Retrieve relevant chunks.
+   * Tries vector search first; falls back to PostgreSQL keyword search on failure.
    */
   async retrieve(query: string): Promise<RetrievalResult> {
-    // Extract keywords from query (supports Chinese and English)
+    // Try vector search first if client is available
+    if (this.vectorClient) {
+      try {
+        const chunks = await this.vectorClient.search(query, this.topK, this.vectorTimeoutMs);
+        if (chunks.length > 0) {
+          console.log(`[retriever] Vector search returned ${chunks.length} chunks`);
+          return { chunks, query, source: "vector" };
+        }
+        console.log("[retriever] Vector search returned 0 results, falling back to keyword search");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[retriever] Vector search failed (${msg}), falling back to keyword search`);
+      }
+    }
+
+    // Fallback: PostgreSQL keyword search
+    const chunks = await this.keywordSearch(query);
+    console.log(`[retriever] Keyword search returned ${chunks.length} chunks`);
+    return { chunks, query, source: "keyword" };
+  }
+
+  /**
+   * PostgreSQL full-text keyword search (fallback).
+   */
+  private async keywordSearch(query: string): Promise<SearchChunk[]> {
     const keywords = this.extractKeywords(query);
 
     if (keywords.length === 0) {
-      return { chunks: [], query };
+      return [];
     }
 
     // Build OR conditions for each keyword
@@ -61,7 +165,7 @@ export class Retriever {
     // Sort by score descending
     scored.sort((a, b) => b.score - a.score);
 
-    return { chunks: scored, query };
+    return scored;
   }
 
   /**

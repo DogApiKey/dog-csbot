@@ -38,6 +38,9 @@ export interface Config {
     apiKey?: string;
     vectorSize: number;
   };
+  vectorSearch: {
+    timeoutMs: number;
+  };
   cors: {
     origins: string[];
   };
@@ -90,6 +93,9 @@ export function loadConfig(): Config {
       model: env("EMBEDDING_MODEL", "text-embedding-3-small"),
       apiKey: process.env.OPENAI_API_KEY,
       vectorSize: parseInt(env("EMBEDDING_VECTOR_SIZE", "1536"), 10),
+    },
+    vectorSearch: {
+      timeoutMs: parseInt(env("VECTOR_SEARCH_TIMEOUT_MS", "5000"), 10),
     },
     cors: {
       origins: env("CORS_ORIGINS", "*").split(",").map((s) => s.trim()),

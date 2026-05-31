@@ -6,7 +6,7 @@ import { createDatabase } from "./db/index.ts";
 import { MessageBus } from "./channels/bus.ts";
 import { SSEManager } from "./channels/web/sse-manager.ts";
 import { WebAdapter } from "./channels/web/adapter.ts";
-import { Retriever } from "./rag/retriever.ts";
+import { Retriever, VectorSearchClient } from "./rag/retriever.ts";
 import { IngestPipeline } from "./rag/ingest.ts";
 import { ConversationService } from "./services/conversation.ts";
 import { Orchestrator } from "./agent/orchestrator.ts";
@@ -70,7 +70,21 @@ async function main() {
 
   const conversationService = new ConversationService(db);
 
-  const retriever = new Retriever(db, 5);
+  // Create vector search client if CF Vectorize is configured
+  let vectorClient: VectorSearchClient | undefined;
+  if (config.vectorStore.cfVectorize.apiUrl) {
+    vectorClient = new VectorSearchClient(
+      config.vectorStore.cfVectorize.apiUrl,
+      config.vectorStore.cfVectorize.apiKey || undefined,
+    );
+    console.log("[csbot] Vector search client configured (vector-proxy)");
+  }
+
+  const retriever = new Retriever(db, {
+    topK: 5,
+    vectorClient,
+    vectorTimeoutMs: config.vectorSearch.timeoutMs,
+  });
   const ingestPipeline = new IngestPipeline(db);
 
   // ─── Channel Adapters ───────────────────────────────────────────────────
