@@ -1,7 +1,9 @@
 import { LitElement, html, css, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { StreamClient, type StreamCallbacks } from "./stream-client.ts";
 import { widgetStyles } from "./styles.ts";
+import { renderMarkdown } from "./markdown.ts";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -142,7 +144,10 @@ export class CsbotWidget extends LitElement {
       if (msg.role === "system") {
         return html`<div class="message system">${msg.content}</div>`;
       }
-      return html`<div class="message ${msg.role}">${msg.content}</div>`;
+      if (msg.role === "assistant") {
+        return html`<div class="message assistant">${unsafeHTML(renderMarkdown(msg.content))}</div>`;
+      }
+      return html`<div class="message user">${msg.content}</div>`;
     });
   }
 

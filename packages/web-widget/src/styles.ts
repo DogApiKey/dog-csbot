@@ -231,4 +231,66 @@ export const widgetStyles = `
   .hidden {
     display: none !important;
   }
+
+  /* Markdown styles */
+  .message.assistant p {
+    margin: 0 0 8px 0;
+  }
+  .message.assistant p:last-child {
+    margin-bottom: 0;
+  }
+  .message.assistant strong {
+    font-weight: 600;
+  }
+  .message.assistant em {
+    font-style: italic;
+  }
+  .message.assistant code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.9em;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+  }
+  .message.assistant pre {
+    background: rgba(0,0,0,0.06);
+    padding: 8px 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+  }
+  .message.assistant pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+  }
+  .message.assistant ul, .message.assistant ol {
+    margin: 4px 0;
+    padding-left: 20px;
+  }
+  .message.assistant li {
+    margin: 2px 0;
+  }
+  .message.assistant a {
+    color: var(--csbot-primary);
+    text-decoration: underline;
+  }
+  .message.assistant a:hover {
+    opacity: 0.8;
+  }
+  .message.assistant h2, .message.assistant h3, .message.assistant h4 {
+    margin: 12px 0 4px 0;
+    font-weight: 600;
+  }
+  .message.assistant h2 { font-size: 1.1em; }
+  .message.assistant h3 { font-size: 1em; }
+  .message.assistant h4 { font-size: 0.95em; }
+  .message.assistant hr {
+    border: none;
+    border-top: 1px solid var(--csbot-border);
+    margin: 8px 0;
+  }
+  .message.assistant del {
+    opacity: 0.6;
+  }
 `;
