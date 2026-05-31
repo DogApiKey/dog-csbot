@@ -1,0 +1,21 @@
+{
+  "name": "@csbot/web-widget",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/csbot-widget.js",
+  "module": "dist/csbot-widget.js",
+  "types": "dist/csbot-widget.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lit": "^3.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun install *)",
+      "Bash(bun x *)",
+      "Bash(docker compose *)",
+      "Bash(bun run *)",
+      "Bash(curl -s http://localhost:3000/health)",
+      "Bash(pkill -f \"bun run src/index.ts\")",
+      "Bash(curl *)",
+      "Read(//tmp/**)",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs kill -9)",
+      "Read(//private/tmp/**)",
+      "Bash(docker exec deploy-postgres-1 *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(pkill *)",
+      "Bash(open *)"
+    ]
+  }
+}

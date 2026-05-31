@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSBot Widget Preview</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: #f0f2f5;
+      min-height: 100vh;
+    }
+    .demo-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    h1 { color: #111827; margin-bottom: 8px; }
+    p { color: #6b7280; }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    pre {
+      background: #1f2937;
+      color: #e5e7eb;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <h1>CSBot Widget Preview</h1>
+    <p>This page demonstrates the embeddable chat widget. Click the chat button in the bottom-right corner.</p>
+
+    <h2>Embedding</h2>
+    <p>Add the widget to any page with just two lines:</p>
+    <pre><code>&lt;script src="https://your-domain/csbot-widget.js"&gt;&lt;/script&gt;
+&lt;csbot-widget api-url="https://your-domain/api"&gt;&lt;/csbot-widget&gt;</code></pre>
+
+    <h2>Configuration</h2>
+    <pre><code>&lt;csbot-widget
+  api-url="https://your-domain/api"
+  title="Support Chat"
+  greeting="Hi! How can I help you?"
+&gt;&lt;/csbot-widget&gt;</code></pre>
+  </div>
+
+  <!-- The widget -->
+  <script type="module" src="/src/csbot-widget.ts"></script>
+  <csbot-widget api-url="http://localhost:3000" title="CSBot Support" greeting="Hello! I'm your customer service assistant. How can I help you today?"></csbot-widget>
+</body>
+</html>
