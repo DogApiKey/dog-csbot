@@ -3,6 +3,7 @@ import type { Database } from "../db/index.ts";
 import { documents } from "../db/schema.ts";
 import type { IngestPipeline } from "../rag/ingest.ts";
 import type { ConversationService } from "../services/conversation.ts";
+import { GitHubSyncService } from "../services/github-sync.ts";
 import { eq, desc } from "drizzle-orm";
 
 export interface AdminRoutesOptions {
@@ -14,6 +15,42 @@ export interface AdminRoutesOptions {
 export function createAdminRoutes(options: AdminRoutesOptions): Hono {
   const app = new Hono();
   const { db, ingestPipeline, conversationService } = options;
+
+  const githubSyncService = new GitHubSyncService(db, ingestPipeline);
+
+  // ─── GitHub Sync ──────────────────────────────────────────────────────────
+
+  /**
+   * POST /api/admin/sync/github
+   * Sync documents from a GitHub repository.
+   */
+  app.post("/api/admin/sync/github", async (c) => {
+    const body = await c.req.json<{
+      owner: string;
+      repo: string;
+      branch?: string;
+      path?: string;
+      token?: string;
+    }>();
+
+    if (!body.owner || !body.repo) {
+      return c.json({ error: "owner and repo are required" }, 400);
+    }
+
+    try {
+      const result = await githubSyncService.sync({
+        owner: body.owner,
+        repo: body.repo,
+        branch: body.branch ?? "main",
+        path: body.path ?? "",
+        token: body.token,
+      });
+      return c.json(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return c.json({ error: message }, 500);
+    }
+  });
 
   // ─── Documents ────────────────────────────────────────────────────────────
 

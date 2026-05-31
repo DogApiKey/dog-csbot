@@ -6,11 +6,13 @@ import {
   reindexDocument,
   type Document,
 } from "../api/client.ts";
+import GitHubSync from "../components/GitHubSync.tsx";
 
 export default function Documents() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
+  const [showSync, setShowSync] = useState(false);
   const [uploadForm, setUploadForm] = useState({
     title: "",
     content: "",
@@ -93,13 +95,28 @@ export default function Documents() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Documents</h2>
-        <button
-          onClick={() => setShowUpload(!showUpload)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
-        >
-          {showUpload ? "Cancel" : "Upload Document"}
-        </button>
+        <div className="space-x-2">
+          <button
+            onClick={() => { setShowSync(!showSync); setShowUpload(false); }}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+          >
+            {showSync ? "Close" : "📦 Sync from GitHub"}
+          </button>
+          <button
+            onClick={() => { setShowUpload(!showUpload); setShowSync(false); }}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+          >
+            {showUpload ? "Cancel" : "Upload Document"}
+          </button>
+        </div>
       </div>
+
+      {/* GitHub Sync */}
+      {showSync && (
+        <div className="mb-6">
+          <GitHubSync onSyncComplete={loadDocuments} />
+        </div>
+      )}
 
       {/* Upload Form */}
       {showUpload && (
