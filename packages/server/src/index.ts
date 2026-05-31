@@ -17,6 +17,7 @@ import { createAdminRoutes } from "./api/admin.ts";
 // Vector store imports (loaded conditionally)
 import { VectorStore as QdrantStore } from "./rag/vector-store.ts";
 import { VikingStore } from "./rag/viking-store.ts";
+import { CFVectorizeStore } from "./rag/cf-vectorize-store.ts";
 
 async function main() {
   const config = loadConfig();
@@ -35,7 +36,7 @@ async function main() {
 
   // ─── Vector Store ───────────────────────────────────────────────────────
 
-  let vectorStore: QdrantStore | VikingStore | null = null;
+  let vectorStore: QdrantStore | VikingStore | CFVectorizeStore | null = null;
 
   if (config.vectorStore.type === "viking") {
     const { ak, sk, region, collection, indexName, vectorSize } = config.vectorStore.viking;
@@ -51,6 +52,16 @@ async function main() {
     vectorStore = new QdrantStore(url, collectionName, vectorSize);
     await vectorStore.ensureCollection();
     console.log("[csbot] Qdrant connected");
+  } else if (config.vectorStore.type === "cf-vectorize") {
+    const { apiUrl, apiKey } = config.vectorStore.cfVectorize;
+    const cfStore = new CFVectorizeStore({ apiUrl, apiKey });
+    const healthy = await cfStore.health();
+    if (healthy) {
+      vectorStore = cfStore;
+      console.log("[csbot] Cloudflare Vectorize connected");
+    } else {
+      console.log("[csbot] Cloudflare Vectorize not reachable, using keyword search only");
+    }
   } else {
     console.log("[csbot] No vector store configured, using keyword search only");
   }

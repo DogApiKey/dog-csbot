@@ -7,7 +7,7 @@ export interface Config {
     url: string;
   };
   vectorStore: {
-    /** "qdrant" | "viking" */
+    /** "qdrant" | "viking" | "cf-vectorize" */
     type: string;
     qdrant: {
       url: string;
@@ -21,6 +21,10 @@ export interface Config {
       collection: string;
       indexName: string;
       vectorSize: number;
+    };
+    cfVectorize: {
+      apiUrl: string;
+      apiKey: string;
     };
   };
   llm: {
@@ -57,7 +61,7 @@ export function loadConfig(): Config {
       url: env("REDIS_URL", "redis://localhost:6379"),
     },
     vectorStore: {
-      type: env("VECTOR_STORE_TYPE", "qdrant"),
+      type: env("VECTOR_STORE_TYPE", "cf-vectorize"),
       qdrant: {
         url: env("QDRANT_URL", "http://localhost:6333"),
         collectionName: env("QDRANT_COLLECTION", "csbot_docs"),
@@ -70,6 +74,10 @@ export function loadConfig(): Config {
         collection: env("VIKING_COLLECTION", "csbot_docs"),
         indexName: env("VIKING_INDEX", "csbot_docs_idx"),
         vectorSize: parseInt(env("EMBEDDING_VECTOR_SIZE", "1536"), 10),
+      },
+      cfVectorize: {
+        apiUrl: env("CF_VECTORIZE_URL", "https://vector.orcax.net"),
+        apiKey: env("CF_VECTORIZE_API_KEY", ""),
       },
     },
     llm: {
