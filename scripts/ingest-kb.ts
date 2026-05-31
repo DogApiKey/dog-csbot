@@ -20,14 +20,16 @@
 
 const CF_VECTORIZE_URL = process.env.CF_VECTORIZE_URL || "https://vector.orcax.net";
 const CF_VECTORIZE_API_KEY = process.env.CF_VECTORIZE_API_KEY || "";
-const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || "ollama";
+const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || "cf-workers-ai";
+const EMBEDDING_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || "1024");
+const KB_REPO_PATH = process.env.KB_REPO_PATH || "../dogapi-kb";
+
+// Legacy providers (not recommended)
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen3-embedding:8b";
-const EMBEDDING_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || "1024");
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
 const OPENAI_MODEL = process.env.EMBEDDING_MODEL || "text-embedding-3-small";
-const KB_REPO_PATH = process.env.KB_REPO_PATH || "../dogapi-kb";
 
 interface VectorPoint {
   id: string;
@@ -221,20 +223,78 @@ async function openaiEmbedBatch(texts: string[]): Promise<number[][]> {
   return embeddings;
 }
 
+// ─── Embedding (Cloudflare Workers AI) ───────────────────────────────────────
+
+async function cfEmbed(text: string): Promise<number[]> {
+  const response = await fetch(`${CF_VECTORIZE_URL}/embed`, {
+    method: "POST",
+    headers: vectorizeHeaders,
+    body: JSON.stringify({ text }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`CF Workers AI error (${response.status}): ${error}`);
+  }
+
+  const data = (await response.json()) as { data: number[][] };
+  return data.data[0];
+}
+
+async function cfEmbedBatch(texts: string[]): Promise<number[][]> {
+  // Workers AI supports batch embedding
+  const batchSize = 32;
+  const embeddings: number[][] = [];
+
+  for (let i = 0; i < texts.length; i += batchSize) {
+    const batch = texts.slice(i, i + batchSize);
+
+    const response = await fetch(`${CF_VECTORIZE_URL}/embed`, {
+      method: "POST",
+      headers: vectorizeHeaders,
+      body: JSON.stringify({ text: batch }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`CF Workers AI error (${response.status}): ${error}`);
+    }
+
+    const data = (await response.json()) as { data: number[][] };
+    embeddings.push(...data.data);
+
+    console.log(`  Embedded ${Math.min(i + batchSize, texts.length)}/${texts.length} chunks`);
+  }
+
+  return embeddings;
+}
+
 // ─── Embedding Router ────────────────────────────────────────────────────────
 
 async function generateEmbedding(text: string): Promise<number[]> {
-  if (EMBEDDING_PROVIDER === "ollama") {
-    return ollamaEmbed(text);
+  switch (EMBEDDING_PROVIDER) {
+    case "cf-workers-ai":
+      return cfEmbed(text);
+    case "ollama":
+      return ollamaEmbed(text);
+    case "openai":
+      return openaiEmbed(text);
+    default:
+      throw new Error(`Unknown embedding provider: ${EMBEDDING_PROVIDER}`);
   }
-  return openaiEmbed(text);
 }
 
 async function generateEmbeddings(texts: string[]): Promise<number[][]> {
-  if (EMBEDDING_PROVIDER === "ollama") {
-    return ollamaEmbedBatch(texts);
+  switch (EMBEDDING_PROVIDER) {
+    case "cf-workers-ai":
+      return cfEmbedBatch(texts);
+    case "ollama":
+      return ollamaEmbedBatch(texts);
+    case "openai":
+      return openaiEmbedBatch(texts);
+    default:
+      throw new Error(`Unknown embedding provider: ${EMBEDDING_PROVIDER}`);
   }
-  return openaiEmbedBatch(texts);
 }
 
 // ─── Vectorize API ───────────────────────────────────────────────────────────
